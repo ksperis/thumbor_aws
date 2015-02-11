@@ -124,7 +124,7 @@ class Storage(BaseStorage):
 
     def is_expired(self, key):
         if key:
-            expire_in_seconds = self.context.config.get('RESULT_STORAGE_EXPIRATION_SECONDS', None)
+            expire_in_seconds = self.context.config.get('STORAGE_EXPIRATION_SECONDS', None)
 
             #Never expire
             if expire_in_seconds is None or expire_in_seconds == 0:
