@@ -1,4 +1,4 @@
-#coding: utf-8
+# coding: utf-8
 
 import calendar
 from datetime import datetime, timedelta
@@ -16,9 +16,8 @@ from dateutil.parser import parse as parse_ts
 
 import thumbor_aws.connection
 
+
 class Storage(BaseStorage):
-
-
     def __init__(self, context):
         BaseStorage.__init__(self, context)
         self.storage = self.__get_s3_bucket()
@@ -32,12 +31,13 @@ class Storage(BaseStorage):
     def put(self, path, bytes):
         file_abspath = self.normalize_path(path)
 
-        file_key=Key(self.storage)
+        file_key = Key(self.storage)
         file_key.key = file_abspath
 
-        file_key.set_contents_from_string(bytes,
-            encrypt_key = self.context.config.get('S3_STORAGE_SSE', default=False),
-            reduced_redundancy = self.context.config.get('S3_STORAGE_RRS', default=False)
+        file_key.set_contents_from_string(
+            bytes,
+            encrypt_key=self.context.config.get('S3_STORAGE_SSE', False),
+            reduced_redundancy=self.context.config.get('S3_STORAGE_RRS', False)
         )
 
         return path
@@ -49,16 +49,21 @@ class Storage(BaseStorage):
         file_abspath = self.normalize_path(path)
 
         if not self.context.server.security_key:
-            raise RuntimeError("STORES_CRYPTO_KEY_FOR_EACH_IMAGE can't be True if no SECURITY_KEY specified")
+            raise RuntimeError(
+                ('STORES_CRYPTO_KEY_FOR_EACH_IMAGE '
+                 "can't be True if no SECURITY_KEY specified"))
 
         crypto_path = '%s.txt' % splitext(file_abspath)[0]
 
-        file_key=Key(self.storage)
+        file_key = Key(self.storage)
         file_key.key = crypto_path
 
-        file_key.set_contents_from_string(self.context.server.security_key,
-            encrypt_key = self.context.config.get('S3_STORAGE_SSE', default=False),
-            reduced_redundancy = self.context.config.get('S3_STORAGE_RRS', default=False)
+        file_key.set_contents_from_string(
+            self.context.server.security_key,
+            encrypt_key=self.context.config.get(
+                'S3_STORAGE_SSE', default=False),
+            reduced_redundancy=self.context.config.get(
+                'S3_STORAGE_RRS', default=False)
         )
 
         return crypto_path
@@ -68,12 +73,15 @@ class Storage(BaseStorage):
 
         path = '%s.detectors.txt' % splitext(file_abspath)[0]
 
-        file_key=Key(self.storage)
+        file_key = Key(self.storage)
         file_key.key = path
 
-        file_key.set_contents_from_string(dumps(data),
-            encrypt_key = self.context.config.get('S3_STORAGE_SSE', default=False),
-            reduced_redundancy = self.context.config.get('S3_STORAGE_RRS', default=False)
+        file_key.set_contents_from_string(
+            dumps(data),
+            encrypt_key=self.context.config.get(
+                'S3_STORAGE_SSE', default=False),
+            reduced_redundancy=self.context.config.get(
+                'S3_STORAGE_RRS', default=False)
         )
 
         return path
@@ -89,9 +97,7 @@ class Storage(BaseStorage):
         return file_key.read()
 
     def get(self, path):
-
         file_abspath = self.normalize_path(path)
-
         file_key = self.storage.get_key(file_abspath)
 
         if not file_key or self.is_expired(file_key):
@@ -124,20 +130,20 @@ class Storage(BaseStorage):
 
     def is_expired(self, key):
         if key:
-            expire_in_seconds = self.context.config.get('STORAGE_EXPIRATION_SECONDS', None)
+            expire_in_seconds = self.context.config.get(
+                'STORAGE_EXPIRATION_SECONDS', None)
 
-            #Never expire
             if expire_in_seconds is None or expire_in_seconds == 0:
                 return False
 
-            timediff = datetime.now() - self.utc_to_local(parse_ts(key.last_modified))
+            timediff = (
+                datetime.now() - self.utc_to_local(
+                    parse_ts(key.last_modified)))
             return timediff.seconds > expire_in_seconds
         else:
-            #If our key is bad just say we're expired
             return True
 
     def remove(self, path):
-
         if not self.exists(path):
             return
 
